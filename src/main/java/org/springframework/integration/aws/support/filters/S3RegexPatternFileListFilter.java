@@ -39,7 +39,7 @@ public class S3RegexPatternFileListFilter extends AbstractRegexPatternFileListFi
 
 	@Override
 	protected String getFilename(S3Object file) {
-		return (file != null) ? file.key() : null;
+		return file != null ? file.key() : null;
 	}
 
 	@Override

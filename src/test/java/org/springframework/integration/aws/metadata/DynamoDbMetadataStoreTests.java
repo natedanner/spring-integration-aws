@@ -42,7 +42,7 @@ class DynamoDbMetadataStoreTests implements LocalstackContainerTest {
 
 	private static final String TEST_TABLE = "testMetadataStore";
 
-	private static DynamoDbAsyncClient DYNAMO_DB;
+	private static DynamoDbAsyncClient dynamoDb;
 
 	private static DynamoDbMetadataStore store;
 
@@ -52,11 +52,11 @@ class DynamoDbMetadataStoreTests implements LocalstackContainerTest {
 
 	@BeforeAll
 	static void setup() {
-		DYNAMO_DB = LocalstackContainerTest.dynamoDbClient();
+		dynamoDb = LocalstackContainerTest.dynamoDbClient();
 		try {
-			DYNAMO_DB.deleteTable(request -> request.tableName(TEST_TABLE))
+			dynamoDb.deleteTable(request -> request.tableName(TEST_TABLE))
 					.thenCompose(result ->
-							DYNAMO_DB.waiter()
+							dynamoDb.waiter()
 									.waitUntilTableNotExists(request -> request
 													.tableName(DynamoDbLockRepository.DEFAULT_TABLE_NAME),
 											waiter -> waiter
@@ -69,7 +69,7 @@ class DynamoDbMetadataStoreTests implements LocalstackContainerTest {
 			// Ignore if table does not exist
 		}
 
-		store = new DynamoDbMetadataStore(DYNAMO_DB, TEST_TABLE);
+		store = new DynamoDbMetadataStore(dynamoDb, TEST_TABLE);
 		store.setTimeToLive(10);
 		store.afterPropertiesSet();
 	}
@@ -80,7 +80,7 @@ class DynamoDbMetadataStoreTests implements LocalstackContainerTest {
 
 		createTableLatch.await();
 
-		DYNAMO_DB.deleteItem(request -> request
+		dynamoDb.deleteItem(request -> request
 						.tableName(TEST_TABLE)
 						.key(Map.of(DynamoDbMetadataStore.KEY, AttributeValue.fromS((this.file1)))))
 				.join();

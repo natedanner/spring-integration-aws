@@ -72,11 +72,11 @@ public class KplKclIntegrationTests implements LocalstackContainerTest {
 
 	private static final String TEST_STREAM = "TestStreamKplKcl";
 
-	private static KinesisAsyncClient AMAZON_KINESIS;
+	private static KinesisAsyncClient amazonKinesis;
 
-	private static DynamoDbAsyncClient DYNAMO_DB;
+	private static DynamoDbAsyncClient dynamoDb;
 
-	private static CloudWatchAsyncClient CLOUD_WATCH;
+	private static CloudWatchAsyncClient cloudWatch;
 
 	@Autowired
 	private MessageChannel kinesisSendChannel;
@@ -89,19 +89,19 @@ public class KplKclIntegrationTests implements LocalstackContainerTest {
 
 	@BeforeAll
 	static void setup() {
-		AMAZON_KINESIS = LocalstackContainerTest.kinesisClient();
-		DYNAMO_DB = LocalstackContainerTest.dynamoDbClient();
-		CLOUD_WATCH = LocalstackContainerTest.cloudWatchClient();
+		amazonKinesis = LocalstackContainerTest.kinesisClient();
+		dynamoDb = LocalstackContainerTest.dynamoDbClient();
+		cloudWatch = LocalstackContainerTest.cloudWatchClient();
 
-		AMAZON_KINESIS.createStream(request -> request.streamName(TEST_STREAM).shardCount(1))
+		amazonKinesis.createStream(request -> request.streamName(TEST_STREAM).shardCount(1))
 				.thenCompose(result ->
-						AMAZON_KINESIS.waiter().waitUntilStreamExists(request -> request.streamName(TEST_STREAM)))
+						amazonKinesis.waiter().waitUntilStreamExists(request -> request.streamName(TEST_STREAM)))
 				.join();
 	}
 
 	@AfterAll
 	static void tearDown() {
-		AMAZON_KINESIS.deleteStream(request -> request.streamName(TEST_STREAM));
+		amazonKinesis.deleteStream(request -> request.streamName(TEST_STREAM));
 	}
 
 	@Test
@@ -173,7 +173,7 @@ public class KplKclIntegrationTests implements LocalstackContainerTest {
 		@Bean
 		public KclMessageDrivenChannelAdapter kclMessageDrivenChannelAdapter() {
 			KclMessageDrivenChannelAdapter adapter =
-					new KclMessageDrivenChannelAdapter(AMAZON_KINESIS, CLOUD_WATCH, DYNAMO_DB, TEST_STREAM);
+					new KclMessageDrivenChannelAdapter(amazonKinesis, cloudWatch, dynamoDb, TEST_STREAM);
 			adapter.setOutputChannel(kinesisReceiveChannel());
 			adapter.setErrorChannel(errorChannel());
 			adapter.setErrorMessageStrategy(new KinesisMessageHeaderErrorMessageStrategy());

@@ -185,7 +185,7 @@ public class DynamoDbLockRepository implements InitializingBean, DisposableBean,
 		this.dynamoDB.describeTable(request -> request.tableName(this.tableName))
 				.thenRun(() -> {
 				})
-				.exceptionallyCompose((ex) -> {
+				.exceptionallyCompose(ex -> {
 					Throwable cause = ex.getCause();
 					if (cause instanceof ResourceNotFoundException) {
 						if (LOGGER.isInfoEnabled()) {
@@ -197,7 +197,7 @@ public class DynamoDbLockRepository implements InitializingBean, DisposableBean,
 						return rethrowAsRuntimeException(cause);
 					}
 				})
-				.exceptionally((ex) -> {
+				.exceptionally(ex -> {
 					LOGGER.error("Cannot create DynamoDb table: " + this.tableName, ex.getCause());
 					return null;
 				})
@@ -242,7 +242,7 @@ public class DynamoDbLockRepository implements InitializingBean, DisposableBean,
 												.maxAttempts(60)
 												.backoffStrategy(
 														FixedDelayBackoffStrategy.create(Duration.ofSeconds(1)))))
-				.thenCompose((response) -> updateTimeToLive())
+				.thenCompose(response -> updateTimeToLive())
 				.thenRun(() -> {
 				});
 	}
@@ -346,7 +346,7 @@ public class DynamoDbLockRepository implements InitializingBean, DisposableBean,
 	public void deleteExpired() {
 		awaitForActive();
 		synchronized (this.heldLocks) {
-			this.heldLocks.forEach((lock) ->
+			this.heldLocks.forEach(lock ->
 					doDelete(
 							DeleteItemRequest.builder()
 									.key(Map.of(KEY_ATTR, AttributeValue.fromS(lock)))

@@ -275,7 +275,7 @@ public class S3MessageHandler extends AbstractReplyProducingMessageHandler {
 							.s3Prefix(key);
 
 			if (transferListener != null) {
-				uploadDirectoryRequest.uploadFileRequestTransformer((fileUpload) ->
+				uploadDirectoryRequest.uploadFileRequestTransformer(fileUpload ->
 						fileUpload.addTransferListener(transferListener));
 			}
 
@@ -284,7 +284,7 @@ public class S3MessageHandler extends AbstractReplyProducingMessageHandler {
 		else {
 			PutObjectRequest.Builder putObjectRequestBuilder =
 					PutObjectRequest.builder()
-							.applyMutation((builder) -> this.uploadMetadataProvider.accept(builder, requestMessage))
+							.applyMutation(builder -> this.uploadMetadataProvider.accept(builder, requestMessage))
 							.bucket(bucketName)
 							.key(key);
 
@@ -375,7 +375,7 @@ public class S3MessageHandler extends AbstractReplyProducingMessageHandler {
 							.destination(targetFile.toPath())
 							.listObjectsV2RequestTransformer(filter -> filter.prefix(key));
 			if (transferListener != null) {
-				downloadDirectoryRequest.downloadFileRequestTransformer((fileDownload) ->
+				downloadDirectoryRequest.downloadFileRequestTransformer(fileDownload ->
 						fileDownload.addTransferListener(transferListener));
 			}
 			return this.transferManager.downloadDirectory(downloadDirectoryRequest.build());

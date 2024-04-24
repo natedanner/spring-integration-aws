@@ -197,8 +197,8 @@ public class KinesisMessageHandler extends AbstractAwsMessageHandler<Void> {
 				+ "Consider configuring this handler with a 'partitionKey'( or 'partitionKeyExpression') or supply an "
 				+ "'aws_partitionKey' message header.");
 
-		String explicitHashKey = (this.explicitHashKeyExpression != null
-				? this.explicitHashKeyExpression.getValue(getEvaluationContext(), message, String.class) : null);
+		String explicitHashKey = this.explicitHashKeyExpression != null
+				? this.explicitHashKeyExpression.getValue(getEvaluationContext(), message, String.class) : null;
 
 		String sequenceNumber = messageHeaders.get(AwsHeaders.SEQUENCE_NUMBER, String.class);
 		if (!StringUtils.hasText(sequenceNumber) && this.sequenceNumberExpression != null) {

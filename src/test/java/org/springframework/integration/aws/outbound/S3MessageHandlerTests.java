@@ -82,7 +82,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DirtiesContext
 public class S3MessageHandlerTests implements LocalstackContainerTest {
 
-	private static S3AsyncClient S3;
+	private static S3AsyncClient s3;
 
 	// define the bucket and file names used throughout the test
 	private static final String S3_BUCKET_NAME = "my-bucket";
@@ -111,16 +111,16 @@ public class S3MessageHandlerTests implements LocalstackContainerTest {
 
 	@BeforeAll
 	static void setup() {
-		S3 = LocalstackContainerTest.s3AsyncClient();
-		S3.createBucket(request -> request.bucket(S3_BUCKET_NAME)).join();
+		s3 = LocalstackContainerTest.s3AsyncClient();
+		s3.createBucket(request -> request.bucket(S3_BUCKET_NAME)).join();
 	}
 
 	@BeforeEach
 	void prepareBucket() {
-		S3.listObjects(request -> request.bucket(S3_BUCKET_NAME))
+		s3.listObjects(request -> request.bucket(S3_BUCKET_NAME))
 				.thenCompose(result -> {
 					if (result.hasContents()) {
-						return S3.deleteObjects(request -> request.bucket(S3_BUCKET_NAME)
+						return s3.deleteObjects(request -> request.bucket(S3_BUCKET_NAME)
 								.delete(delete ->
 										delete.objects(
 												result.contents()
@@ -162,7 +162,7 @@ public class S3MessageHandlerTests implements LocalstackContainerTest {
 		File outputFile = new File(temporaryFolder.toFile(), "outputFile1");
 
 		GetObjectResponse getObjectResponse =
-				S3.getObject(request -> request.bucket(S3_BUCKET_NAME).key("foo.mp3"), outputFile.toPath())
+				s3.getObject(request -> request.bucket(S3_BUCKET_NAME).key("foo.mp3"), outputFile.toPath())
 						.join();
 
 		assertThat(getObjectResponse.contentLength()).isEqualTo(testData.length);
@@ -210,7 +210,7 @@ public class S3MessageHandlerTests implements LocalstackContainerTest {
 		File outputFile = new File(temporaryFolder.toFile(), "outputFile2");
 
 		GetObjectResponse getObjectResponse =
-				S3.getObject(request -> request.bucket(S3_BUCKET_NAME).key("myStream"), outputFile.toPath())
+				s3.getObject(request -> request.bucket(S3_BUCKET_NAME).key("myStream"), outputFile.toPath())
 						.join();
 
 		assertThat(getObjectResponse.contentLength()).isEqualTo(testData.length());
@@ -246,7 +246,7 @@ public class S3MessageHandlerTests implements LocalstackContainerTest {
 		File outputFile = new File(temporaryFolder.toFile(), "outputFile3");
 
 		GetObjectResponse getObjectResponse =
-				S3.getObject(request -> request.bucket(S3_BUCKET_NAME).key("myStream"), outputFile.toPath())
+				s3.getObject(request -> request.bucket(S3_BUCKET_NAME).key("myStream"), outputFile.toPath())
 						.join();
 
 		assertThat(getObjectResponse.contentLength()).isEqualTo(payload.length);
@@ -259,10 +259,10 @@ public class S3MessageHandlerTests implements LocalstackContainerTest {
 	@Test
 	void testDownloadDirectory() throws IOException {
 		CompletableFuture<PutObjectResponse> bb =
-				S3.putObject(request -> request.bucket(S3_BUCKET_NAME).key(S3_FILE_KEY_BAR),
+				s3.putObject(request -> request.bucket(S3_BUCKET_NAME).key(S3_FILE_KEY_BAR),
 						AsyncRequestBody.fromString("bb"));
 		CompletableFuture<PutObjectResponse> f =
-				S3.putObject(request -> request.bucket(S3_BUCKET_NAME).key(S3_FILE_KEY_FOO),
+				s3.putObject(request -> request.bucket(S3_BUCKET_NAME).key(S3_FILE_KEY_FOO),
 						AsyncRequestBody.fromString("f"));
 
 		CompletableFuture.allOf(bb, f).join();
@@ -303,9 +303,9 @@ public class S3MessageHandlerTests implements LocalstackContainerTest {
 	void testCopy() throws IOException {
 		byte[] testData = "ff".getBytes();
 		CompletableFuture<PutObjectResponse> mySource =
-				S3.putObject(request -> request.bucket(S3_BUCKET_NAME).key("mySource"),
+				s3.putObject(request -> request.bucket(S3_BUCKET_NAME).key("mySource"),
 						AsyncRequestBody.fromBytes(testData));
-		CompletableFuture<CreateBucketResponse> theirBucket = S3.createBucket(request -> request.bucket("their-bucket"));
+		CompletableFuture<CreateBucketResponse> theirBucket = s3.createBucket(request -> request.bucket("their-bucket"));
 
 		CompletableFuture.allOf(mySource, theirBucket).join();
 		Map<String, String> payload = new HashMap<>();
@@ -325,7 +325,7 @@ public class S3MessageHandlerTests implements LocalstackContainerTest {
 		File outputFile = new File(temporaryFolder.toFile(), "outputFile4");
 
 		GetObjectResponse getObjectResponse =
-				S3.getObject(request -> request.bucket("their-bucket").key("theirTarget"), outputFile.toPath())
+				s3.getObject(request -> request.bucket("their-bucket").key("theirTarget"), outputFile.toPath())
 						.join();
 
 		assertThat(getObjectResponse.contentLength()).isEqualTo(testData.length);
@@ -340,7 +340,7 @@ public class S3MessageHandlerTests implements LocalstackContainerTest {
 		@Bean
 		@ServiceActivator(inputChannel = "s3SendChannel")
 		public MessageHandler s3MessageHandler() {
-			S3MessageHandler s3MessageHandler = new S3MessageHandler(S3, S3_BUCKET_NAME);
+			S3MessageHandler s3MessageHandler = new S3MessageHandler(s3, S3_BUCKET_NAME);
 			s3MessageHandler.setCommandExpression(PARSER.parseExpression("headers.s3Command"));
 			Expression keyExpression = PARSER.parseExpression(
 					"payload instanceof T(java.io.File) and !payload.directory ? payload.name : headers[key]");
@@ -364,7 +364,7 @@ public class S3MessageHandlerTests implements LocalstackContainerTest {
 		@Bean
 		@ServiceActivator(inputChannel = "s3ProcessChannel")
 		public MessageHandler s3ProcessMessageHandler() {
-			S3MessageHandler s3MessageHandler = new S3MessageHandler(S3, S3_BUCKET_NAME, true);
+			S3MessageHandler s3MessageHandler = new S3MessageHandler(s3, S3_BUCKET_NAME, true);
 			s3MessageHandler.setOutputChannel(s3ReplyChannel());
 			s3MessageHandler.setCommand(S3MessageHandler.Command.COPY);
 			s3MessageHandler.setKeyExpression(PARSER.parseExpression("payload.key"));

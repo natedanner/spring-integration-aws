@@ -33,7 +33,7 @@ public class S3SimplePatternFileListFilter extends AbstractSimplePatternFileList
 
 	@Override
 	protected String getFilename(S3Object file) {
-		return (file != null) ? file.key() : null;
+		return file != null ? file.key() : null;
 	}
 
 	@Override

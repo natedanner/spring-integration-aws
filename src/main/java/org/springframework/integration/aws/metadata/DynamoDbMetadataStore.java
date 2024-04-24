@@ -152,7 +152,7 @@ public class DynamoDbMetadataStore implements ConcurrentMetadataStore, Initializ
 	public void afterPropertiesSet() {
 		this.dynamoDB.describeTable(request -> request.tableName(this.tableName))
 				.thenRun(() -> { })
-				.exceptionallyCompose((ex) -> {
+				.exceptionallyCompose(ex -> {
 					Throwable cause = ex.getCause();
 					if (cause instanceof ResourceNotFoundException) {
 						if (logger.isInfoEnabled()) {
@@ -165,7 +165,7 @@ public class DynamoDbMetadataStore implements ConcurrentMetadataStore, Initializ
 					}
 				})
 				.thenCompose(result -> updateTimeToLiveIfAny())
-				.exceptionally((ex) -> {
+				.exceptionally(ex -> {
 					logger.error("Cannot create DynamoDb table: " + this.tableName, ex.getCause());
 					return null;
 				})
@@ -214,7 +214,7 @@ public class DynamoDbMetadataStore implements ConcurrentMetadataStore, Initializ
 							.timeToLiveSpecification(ttl -> ttl.attributeName(TTL).enabled(this.timeToLive > 0));
 
 			return this.dynamoDB.updateTimeToLive(updateTimeToLiveRequest.build())
-					.exceptionally((ex) -> {
+					.exceptionally(ex -> {
 						if (logger.isWarnEnabled()) {
 							logger.warn("The error during 'updateTimeToLive' request", ex);
 						}

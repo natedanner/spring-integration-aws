@@ -318,7 +318,7 @@ public class KplMessageHandler extends AbstractAwsMessageHandler<Void> implement
 		AtomicInteger failedRecordsCount = new AtomicInteger();
 
 		return Flux.fromIterable(putRecordsRequest.records())
-				.map((putRecordsRequestEntry) -> {
+				.map(putRecordsRequestEntry -> {
 					UserRecord userRecord = new UserRecord();
 					userRecord.setExplicitHashKey(putRecordsRequestEntry.explicitHashKey());
 					userRecord.setData(putRecordsRequestEntry.data().asByteBuffer());
@@ -327,7 +327,7 @@ public class KplMessageHandler extends AbstractAwsMessageHandler<Void> implement
 					setGlueSchemaIntoUserRecordIfAny(userRecord, message);
 					return userRecord;
 				})
-				.concatMap((userRecord) ->
+				.concatMap(userRecord ->
 						Mono.fromFuture(handleUserRecord(userRecord))
 								.map(recordResult ->
 										PutRecordsResultEntry.builder()
@@ -335,8 +335,8 @@ public class KplMessageHandler extends AbstractAwsMessageHandler<Void> implement
 												.shardId(recordResult.shardId())
 												.build())
 								.onErrorResume(UserRecordFailedException.class,
-										(ex) -> Mono.just(ex.getResult())
-												.map((errorRecord) -> {
+										ex -> Mono.just(ex.getResult())
+												.map(errorRecord -> {
 													PutRecordsResultEntry.Builder putRecordsResultEntry =
 															PutRecordsResultEntry.builder()
 																	.sequenceNumber(errorRecord.getSequenceNumber())
@@ -345,14 +345,14 @@ public class KplMessageHandler extends AbstractAwsMessageHandler<Void> implement
 													errorRecord.getAttempts()
 															.stream()
 															.reduce((left, right) -> right)
-															.ifPresent((attempt) ->
+															.ifPresent(attempt ->
 																	putRecordsResultEntry
 																			.errorMessage(attempt.getErrorMessage())
 																			.errorCode(attempt.getErrorCode()));
 													return putRecordsResultEntry.build();
 												})))
 				.collectList()
-				.map((putRecordsResultList) ->
+				.map(putRecordsResultList ->
 						PutRecordsResponse.builder()
 								.records(putRecordsResultList)
 								.failedRecordCount(failedRecordsCount.get())
@@ -411,8 +411,8 @@ public class KplMessageHandler extends AbstractAwsMessageHandler<Void> implement
 					+ "Consider configuring this handler with a 'partitionKey'( or 'partitionKeyExpression') " +
 					"or supply an 'aws_partitionKey' message header.");
 
-			explicitHashKey = (this.explicitHashKeyExpression != null
-					? this.explicitHashKeyExpression.getValue(getEvaluationContext(), message, String.class) : null);
+			explicitHashKey = this.explicitHashKeyExpression != null
+					? this.explicitHashKeyExpression.getValue(getEvaluationContext(), message, String.class) : null;
 
 			sequenceNumber = messageHeaders.get(AwsHeaders.SEQUENCE_NUMBER, String.class);
 			if (!StringUtils.hasText(sequenceNumber) && this.sequenceNumberExpression != null) {

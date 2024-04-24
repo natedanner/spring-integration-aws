@@ -60,17 +60,17 @@ public class S3StreamingChannelAdapterTests implements LocalstackContainerTest {
 
 	private static final String S3_BUCKET = "s3-bucket";
 
-	private static S3Client S3;
+	private static S3Client s3;
 
 	@Autowired
 	private PollableChannel s3FilesChannel;
 
 	@BeforeAll
 	static void setup() {
-		S3 = LocalstackContainerTest.s3Client();
-		S3.createBucket(request -> request.bucket(S3_BUCKET));
-		S3.putObject(request -> request.bucket(S3_BUCKET).key("subdir/a.test"), RequestBody.fromString("Hello"));
-		S3.putObject(request -> request.bucket(S3_BUCKET).key("subdir/b.test"), RequestBody.fromString("Bye"));
+		s3 = LocalstackContainerTest.s3Client();
+		s3.createBucket(request -> request.bucket(S3_BUCKET));
+		s3.putObject(request -> request.bucket(S3_BUCKET).key("subdir/a.test"), RequestBody.fromString("Hello"));
+		s3.putObject(request -> request.bucket(S3_BUCKET).key("subdir/b.test"), RequestBody.fromString("Bye"));
 	}
 
 	@Test
@@ -106,7 +106,7 @@ public class S3StreamingChannelAdapterTests implements LocalstackContainerTest {
 		@Bean
 		@InboundChannelAdapter(value = "s3FilesChannel", poller = @Poller(fixedDelay = "100"))
 		public S3StreamingMessageSource s3InboundStreamingMessageSource() {
-			S3SessionFactory s3SessionFactory = new S3SessionFactory(S3);
+			S3SessionFactory s3SessionFactory = new S3SessionFactory(s3);
 			S3RemoteFileTemplate s3FileTemplate = new S3RemoteFileTemplate(s3SessionFactory);
 			S3StreamingMessageSource s3MessageSource =
 					new S3StreamingMessageSource(s3FileTemplate, Comparator.comparing(S3Object::key));

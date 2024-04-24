@@ -69,7 +69,7 @@ public class KinesisIntegrationTests implements LocalstackContainerTest {
 
 	private static final String TEST_STREAM = "TestStream";
 
-	private static KinesisAsyncClient AMAZON_KINESIS_ASYNC;
+	private static KinesisAsyncClient amazonKinesisAsync;
 
 	@Autowired
 	private MessageChannel kinesisSendChannel;
@@ -82,16 +82,16 @@ public class KinesisIntegrationTests implements LocalstackContainerTest {
 
 	@BeforeAll
 	static void setup() {
-		AMAZON_KINESIS_ASYNC = LocalstackContainerTest.kinesisClient();
-		AMAZON_KINESIS_ASYNC.createStream(request -> request.streamName(TEST_STREAM).shardCount(1))
+		amazonKinesisAsync = LocalstackContainerTest.kinesisClient();
+		amazonKinesisAsync.createStream(request -> request.streamName(TEST_STREAM).shardCount(1))
 				.thenCompose(result ->
-						AMAZON_KINESIS_ASYNC.waiter().waitUntilStreamExists(request -> request.streamName(TEST_STREAM)))
+						amazonKinesisAsync.waiter().waitUntilStreamExists(request -> request.streamName(TEST_STREAM)))
 				.join();
 	}
 
 	@AfterAll
 	static void tearDown() {
-		AMAZON_KINESIS_ASYNC.deleteStream(request -> request.streamName(TEST_STREAM));
+		amazonKinesisAsync.deleteStream(request -> request.streamName(TEST_STREAM));
 	}
 
 	@Test
@@ -151,7 +151,7 @@ public class KinesisIntegrationTests implements LocalstackContainerTest {
 		@Bean
 		@ServiceActivator(inputChannel = "kinesisSendChannel")
 		public MessageHandler kinesisMessageHandler() {
-			KinesisMessageHandler kinesisMessageHandler = new KinesisMessageHandler(AMAZON_KINESIS_ASYNC);
+			KinesisMessageHandler kinesisMessageHandler = new KinesisMessageHandler(amazonKinesisAsync);
 			kinesisMessageHandler.setPartitionKey("1");
 			kinesisMessageHandler.setEmbeddedHeadersMapper(new EmbeddedJsonHeadersMessageMapper("foo"));
 			return kinesisMessageHandler;
@@ -169,7 +169,7 @@ public class KinesisIntegrationTests implements LocalstackContainerTest {
 
 		private KinesisMessageDrivenChannelAdapter kinesisMessageDrivenChannelAdapter() {
 			KinesisMessageDrivenChannelAdapter adapter =
-					new KinesisMessageDrivenChannelAdapter(AMAZON_KINESIS_ASYNC, TEST_STREAM);
+					new KinesisMessageDrivenChannelAdapter(amazonKinesisAsync, TEST_STREAM);
 			adapter.setOutputChannel(kinesisReceiveChannel());
 			adapter.setErrorChannel(errorChannel());
 			adapter.setErrorMessageStrategy(new KinesisMessageHeaderErrorMessageStrategy());

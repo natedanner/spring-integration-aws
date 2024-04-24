@@ -63,24 +63,24 @@ public class S3InboundChannelAdapterTests implements LocalstackContainerTest {
 
 	private static final String S3_BUCKET = "s3-bucket";
 
-	private static S3Client S3;
+	private static S3Client s3;
 
 	@TempDir
 	static Path TEMPORARY_FOLDER;
 
-	private static File LOCAL_FOLDER;
+	private static File localFolder;
 
 	@Autowired
 	private PollableChannel s3FilesChannel;
 
 	@BeforeAll
 	static void setup() {
-		S3 = LocalstackContainerTest.s3Client();
-		S3.createBucket(request -> request.bucket(S3_BUCKET));
-		S3.putObject(request -> request.bucket(S3_BUCKET).key("subdir/a.test"), RequestBody.fromString("Hello"));
-		S3.putObject(request -> request.bucket(S3_BUCKET).key("subdir/b.test"), RequestBody.fromString("Bye"));
+		s3 = LocalstackContainerTest.s3Client();
+		s3.createBucket(request -> request.bucket(S3_BUCKET));
+		s3.putObject(request -> request.bucket(S3_BUCKET).key("subdir/a.test"), RequestBody.fromString("Hello"));
+		s3.putObject(request -> request.bucket(S3_BUCKET).key("subdir/b.test"), RequestBody.fromString("Bye"));
 
-		LOCAL_FOLDER = TEMPORARY_FOLDER.resolve("local").toFile();
+		localFolder = TEMPORARY_FOLDER.resolve("local").toFile();
 	}
 
 	@Test
@@ -113,7 +113,7 @@ public class S3InboundChannelAdapterTests implements LocalstackContainerTest {
 
 		@Bean
 		public S3SessionFactory s3SessionFactory() {
-			S3SessionFactory s3SessionFactory = new S3SessionFactory(S3);
+			S3SessionFactory s3SessionFactory = new S3SessionFactory(s3);
 			s3SessionFactory.setEndpoint("s3-url.com:8000");
 			return s3SessionFactory;
 		}
@@ -137,7 +137,7 @@ public class S3InboundChannelAdapterTests implements LocalstackContainerTest {
 			S3InboundFileSynchronizingMessageSource messageSource = new S3InboundFileSynchronizingMessageSource(
 					s3InboundFileSynchronizer());
 			messageSource.setAutoCreateLocalDirectory(true);
-			messageSource.setLocalDirectory(LOCAL_FOLDER);
+			messageSource.setLocalDirectory(localFolder);
 			messageSource.setLocalFilter(new AcceptOnceFileListFilter<>());
 			return messageSource;
 		}

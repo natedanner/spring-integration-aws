@@ -35,12 +35,12 @@ public class S3PersistentAcceptOnceFileListFilter extends AbstractPersistentAcce
 
 	@Override
 	protected long modified(S3Object file) {
-		return (file != null) ? file.lastModified().getEpochSecond() : 0L;
+		return file != null ? file.lastModified().getEpochSecond() : 0L;
 	}
 
 	@Override
 	protected String fileName(S3Object file) {
-		return (file != null) ? file.key() : null;
+		return file != null ? file.key() : null;
 	}
 
 	/**

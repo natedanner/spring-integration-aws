@@ -62,11 +62,11 @@ public class KclMessageDrivenChannelAdapterTests implements LocalstackContainerT
 
 	private static final String TEST_STREAM = "TestStreamKcl";
 
-	private static KinesisAsyncClient AMAZON_KINESIS;
+	private static KinesisAsyncClient amazonKinesis;
 
-	private static DynamoDbAsyncClient DYNAMO_DB;
+	private static DynamoDbAsyncClient dynamoDb;
 
-	private static CloudWatchAsyncClient CLOUD_WATCH;
+	private static CloudWatchAsyncClient cloudWatch;
 
 	@Autowired
 	private PollableChannel kinesisReceiveChannel;
@@ -76,22 +76,22 @@ public class KclMessageDrivenChannelAdapterTests implements LocalstackContainerT
 
 	@BeforeAll
 	static void setup() {
-		AMAZON_KINESIS = LocalstackContainerTest.kinesisClient();
-		DYNAMO_DB = LocalstackContainerTest.dynamoDbClient();
-		CLOUD_WATCH = LocalstackContainerTest.cloudWatchClient();
+		amazonKinesis = LocalstackContainerTest.kinesisClient();
+		dynamoDb = LocalstackContainerTest.dynamoDbClient();
+		cloudWatch = LocalstackContainerTest.cloudWatchClient();
 
-		AMAZON_KINESIS.createStream(request -> request.streamName(TEST_STREAM).shardCount(1))
+		amazonKinesis.createStream(request -> request.streamName(TEST_STREAM).shardCount(1))
 				.thenCompose(result ->
-						AMAZON_KINESIS.waiter().waitUntilStreamExists(request -> request.streamName(TEST_STREAM)))
+						amazonKinesis.waiter().waitUntilStreamExists(request -> request.streamName(TEST_STREAM)))
 				.join();
 	}
 
 
 	@AfterAll
 	static void tearDown() {
-		AMAZON_KINESIS
+		amazonKinesis
 				.deleteStream(request -> request.streamName(TEST_STREAM).enforceConsumerDeletion(true))
-				.thenCompose(result -> AMAZON_KINESIS.waiter()
+				.thenCompose(result -> amazonKinesis.waiter()
 						.waitUntilStreamNotExists(request -> request.streamName(TEST_STREAM)))
 				.join();
 	}
@@ -100,7 +100,7 @@ public class KclMessageDrivenChannelAdapterTests implements LocalstackContainerT
 	void kclChannelAdapterReceivesRecords() {
 		String testData = "test data";
 
-		AMAZON_KINESIS.putRecord(request ->
+		amazonKinesis.putRecord(request ->
 				request.streamName(TEST_STREAM)
 						.data(SdkBytes.fromUtf8String(testData))
 						.partitionKey("test"));
@@ -113,9 +113,9 @@ public class KclMessageDrivenChannelAdapterTests implements LocalstackContainerT
 		assertThat(receive.getHeaders().get(AwsHeaders.RECEIVED_SEQUENCE_NUMBER, String.class)).isNotEmpty();
 
 		List<Consumer> streamConsumers =
-				AMAZON_KINESIS.describeStream(r -> r.streamName(TEST_STREAM))
+				amazonKinesis.describeStream(r -> r.streamName(TEST_STREAM))
 						.thenCompose(describeStreamResponse ->
-								AMAZON_KINESIS.listStreamConsumers(r ->
+								amazonKinesis.listStreamConsumers(r ->
 										r.streamARN(describeStreamResponse.streamDescription().streamARN())))
 						.join()
 						.consumers();
@@ -151,7 +151,7 @@ public class KclMessageDrivenChannelAdapterTests implements LocalstackContainerT
 		@Bean
 		public KclMessageDrivenChannelAdapter kclMessageDrivenChannelAdapter() {
 			KclMessageDrivenChannelAdapter adapter =
-					new KclMessageDrivenChannelAdapter(AMAZON_KINESIS, CLOUD_WATCH, DYNAMO_DB, TEST_STREAM);
+					new KclMessageDrivenChannelAdapter(amazonKinesis, cloudWatch, dynamoDb, TEST_STREAM);
 			adapter.setOutputChannel(kinesisReceiveChannel());
 			adapter.setStreamInitialSequence(
 					InitialPositionInStreamExtended.newInitialPosition(InitialPositionInStream.TRIM_HORIZON));

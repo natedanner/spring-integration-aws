@@ -422,16 +422,16 @@ public class KclMessageDrivenChannelAdapter extends MessageProducerSupport
 
 		private final Flux<StreamConfig> streamConfigs =
 				Flux.fromArray(KclMessageDrivenChannelAdapter.this.streams)
-						.flatMap((streamName) ->
+						.flatMap(streamName ->
 								Mono.fromFuture(KclMessageDrivenChannelAdapter.this.kinesisClient
 										.describeStreamSummary(request -> request.streamName(streamName))))
 						.map(DescribeStreamSummaryResponse::streamDescriptionSummary)
-						.map((summary) ->
+						.map(summary ->
 								StreamIdentifier.multiStreamInstance(
 										Arn.fromString(summary.streamARN()),
 										summary.streamCreationTimestamp()
 												.getEpochSecond()))
-						.map((streamIdentifier) ->
+						.map(streamIdentifier ->
 								new StreamConfig(streamIdentifier,
 										KclMessageDrivenChannelAdapter.this.streamInitialSequence))
 						.cache();

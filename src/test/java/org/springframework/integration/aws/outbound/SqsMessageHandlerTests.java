@@ -64,7 +64,7 @@ public class SqsMessageHandlerTests implements LocalstackContainerTest {
 
 	private static final AtomicReference<String> bazUrl = new AtomicReference<>();
 
-	private static SqsAsyncClient AMAZON_SQS;
+	private static SqsAsyncClient amazonSqs;
 
 	@Autowired
 	protected MessageChannel sqsSendChannel;
@@ -77,15 +77,15 @@ public class SqsMessageHandlerTests implements LocalstackContainerTest {
 
 	@BeforeAll
 	static void setup() {
-		AMAZON_SQS = LocalstackContainerTest.sqsClient();
+		amazonSqs = LocalstackContainerTest.sqsClient();
 		CompletableFuture<?> foo =
-				AMAZON_SQS.createQueue(request -> request.queueName("foo"))
+				amazonSqs.createQueue(request -> request.queueName("foo"))
 						.thenAccept(response -> fooUrl.set(response.queueUrl()));
 		CompletableFuture<?> bar =
-				AMAZON_SQS.createQueue(request -> request.queueName("bar"))
+				amazonSqs.createQueue(request -> request.queueName("bar"))
 						.thenAccept(response -> barUrl.set(response.queueUrl()));
 		CompletableFuture<?> baz =
-				AMAZON_SQS.createQueue(request -> request.queueName("baz"))
+				amazonSqs.createQueue(request -> request.queueName("baz"))
 						.thenAccept(response -> bazUrl.set(response.queueUrl()));
 
 		CompletableFuture.allOf(foo, bar, baz).join();
@@ -103,7 +103,7 @@ public class SqsMessageHandlerTests implements LocalstackContainerTest {
 		this.sqsSendChannel.send(message);
 
 		ReceiveMessageResponse receiveMessageResponse =
-				AMAZON_SQS.receiveMessage(request -> request.queueUrl(fooUrl.get()).waitTimeSeconds(10))
+				amazonSqs.receiveMessage(request -> request.queueUrl(fooUrl.get()).waitTimeSeconds(10))
 						.join();
 
 		assertThat(receiveMessageResponse.hasMessages()).isTrue();
@@ -113,7 +113,7 @@ public class SqsMessageHandlerTests implements LocalstackContainerTest {
 		this.sqsSendChannel.send(message2);
 
 		receiveMessageResponse =
-				AMAZON_SQS.receiveMessage(request -> request.queueUrl(barUrl.get()).waitTimeSeconds(10))
+				amazonSqs.receiveMessage(request -> request.queueUrl(barUrl.get()).waitTimeSeconds(10))
 						.join();
 
 		assertThat(receiveMessageResponse.hasMessages()).isTrue();
@@ -127,7 +127,7 @@ public class SqsMessageHandlerTests implements LocalstackContainerTest {
 		this.sqsSendChannel.send(message2);
 
 		receiveMessageResponse =
-				AMAZON_SQS.receiveMessage(request ->
+				amazonSqs.receiveMessage(request ->
 								request.queueUrl(bazUrl.get())
 										.messageAttributeNames(QueueAttributeName.ALL.toString())
 										.waitTimeSeconds(10))
@@ -152,9 +152,9 @@ public class SqsMessageHandlerTests implements LocalstackContainerTest {
 		this.sqsSendChannelWithAutoCreate.send(message);
 
 		ReceiveMessageResponse autoCreateQueueResponse =
-				AMAZON_SQS.getQueueUrl(request -> request.queueName("autoCreateQueue"))
+				amazonSqs.getQueueUrl(request -> request.queueName("autoCreateQueue"))
 						.thenCompose(response ->
-								AMAZON_SQS.receiveMessage(request ->
+								amazonSqs.receiveMessage(request ->
 										request.queueUrl(response.queueUrl()).waitTimeSeconds(10)))
 						.join();
 
@@ -169,13 +169,13 @@ public class SqsMessageHandlerTests implements LocalstackContainerTest {
 		@Bean
 		@ServiceActivator(inputChannel = "sqsSendChannel")
 		public MessageHandler sqsMessageHandler() {
-			return new SqsMessageHandler(AMAZON_SQS);
+			return new SqsMessageHandler(amazonSqs);
 		}
 
 		@Bean
 		@ServiceActivator(inputChannel = "sqsSendChannelWithAutoCreate")
 		public MessageHandler sqsMessageHandlerWithQueueAutoCreate() {
-			SqsMessageHandler sqsMessageHandler = new SqsMessageHandler(AMAZON_SQS);
+			SqsMessageHandler sqsMessageHandler = new SqsMessageHandler(amazonSqs);
 			sqsMessageHandler.setQueueNotFoundStrategy(QueueNotFoundStrategy.CREATE);
 			sqsMessageHandler.setQueue("autoCreateQueue");
 			return sqsMessageHandler;

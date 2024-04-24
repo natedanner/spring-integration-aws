@@ -66,7 +66,7 @@ public class S3InboundFileSynchronizer extends AbstractInboundFileSynchronizer<S
 
 	@Override
 	protected String getFilename(S3Object file) {
-		return (file != null ? file.key() : null);
+		return file != null ? file.key() : null;
 	}
 
 	@Override

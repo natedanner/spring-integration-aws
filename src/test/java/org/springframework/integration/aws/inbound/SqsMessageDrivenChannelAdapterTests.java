@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DirtiesContext
 public class SqsMessageDrivenChannelAdapterTests implements LocalstackContainerTest {
 
-	private static SqsAsyncClient AMAZON_SQS;
+	private static SqsAsyncClient amazonSqs;
 
 	private static String testQueueUrl;
 
@@ -54,8 +54,8 @@ public class SqsMessageDrivenChannelAdapterTests implements LocalstackContainerT
 
 	@BeforeAll
 	static void setup() {
-		AMAZON_SQS = LocalstackContainerTest.sqsClient();
-		testQueueUrl = AMAZON_SQS.createQueue(request -> request.queueName("testQueue")).join().queueUrl();
+		amazonSqs = LocalstackContainerTest.sqsClient();
+		testQueueUrl = amazonSqs.createQueue(request -> request.queueName("testQueue")).join().queueUrl();
 	}
 
 	@Test
@@ -67,7 +67,7 @@ public class SqsMessageDrivenChannelAdapterTests implements LocalstackContainerT
 								.dataType("String")
 								.build());
 
-		AMAZON_SQS.sendMessageBatch(request ->
+		amazonSqs.sendMessageBatch(request ->
 				request.queueUrl(testQueueUrl)
 						.entries(SendMessageBatchRequestEntry.builder()
 										.messageBody("messageContent")
@@ -104,7 +104,7 @@ public class SqsMessageDrivenChannelAdapterTests implements LocalstackContainerT
 
 		@Bean
 		public MessageProducer sqsMessageDrivenChannelAdapter() {
-			SqsMessageDrivenChannelAdapter adapter = new SqsMessageDrivenChannelAdapter(AMAZON_SQS, "testQueue");
+			SqsMessageDrivenChannelAdapter adapter = new SqsMessageDrivenChannelAdapter(amazonSqs, "testQueue");
 			adapter.setOutputChannel(inputChannel());
 			return adapter;
 		}

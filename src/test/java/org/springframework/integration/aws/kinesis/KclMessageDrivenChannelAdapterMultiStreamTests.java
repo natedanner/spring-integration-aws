@@ -60,29 +60,29 @@ public class KclMessageDrivenChannelAdapterMultiStreamTests implements Localstac
 
 	private static final String TEST_STREAM2 = "MultiStreamKcl2";
 
-	private static KinesisAsyncClient AMAZON_KINESIS;
+	private static KinesisAsyncClient amazonKinesis;
 
-	private static DynamoDbAsyncClient DYNAMO_DB;
+	private static DynamoDbAsyncClient dynamoDb;
 
-	private static CloudWatchAsyncClient CLOUD_WATCH;
+	private static CloudWatchAsyncClient cloudWatch;
 
 	@Autowired
 	private PollableChannel kinesisReceiveChannel;
 
 	@BeforeAll
 	static void setup() {
-		AMAZON_KINESIS = LocalstackContainerTest.kinesisClient();
-		DYNAMO_DB = LocalstackContainerTest.dynamoDbClient();
-		CLOUD_WATCH = LocalstackContainerTest.cloudWatchClient();
+		amazonKinesis = LocalstackContainerTest.kinesisClient();
+		dynamoDb = LocalstackContainerTest.dynamoDbClient();
+		cloudWatch = LocalstackContainerTest.cloudWatchClient();
 
 		CompletableFuture<?> completableFuture1 =
-				AMAZON_KINESIS.createStream(request -> request.streamName(TEST_STREAM1).shardCount(1))
-						.thenCompose(result -> AMAZON_KINESIS.waiter()
+				amazonKinesis.createStream(request -> request.streamName(TEST_STREAM1).shardCount(1))
+						.thenCompose(result -> amazonKinesis.waiter()
 								.waitUntilStreamExists(request -> request.streamName(TEST_STREAM1)));
 
 		CompletableFuture<?> completableFuture2 =
-				AMAZON_KINESIS.createStream(request -> request.streamName(TEST_STREAM2).shardCount(1))
-						.thenCompose(result -> AMAZON_KINESIS.waiter()
+				amazonKinesis.createStream(request -> request.streamName(TEST_STREAM2).shardCount(1))
+						.thenCompose(result -> amazonKinesis.waiter()
 								.waitUntilStreamExists(request -> request.streamName(TEST_STREAM2)));
 
 		CompletableFuture.allOf(completableFuture1, completableFuture2).join();
@@ -91,13 +91,13 @@ public class KclMessageDrivenChannelAdapterMultiStreamTests implements Localstac
 	@AfterAll
 	static void tearDown() {
 		CompletableFuture<?> completableFuture1 =
-				AMAZON_KINESIS.deleteStream(request -> request.streamName(TEST_STREAM1).enforceConsumerDeletion(true))
-						.thenCompose(result -> AMAZON_KINESIS.waiter()
+				amazonKinesis.deleteStream(request -> request.streamName(TEST_STREAM1).enforceConsumerDeletion(true))
+						.thenCompose(result -> amazonKinesis.waiter()
 								.waitUntilStreamNotExists(request -> request.streamName(TEST_STREAM1)));
 
 		CompletableFuture<?> completableFuture2 =
-				AMAZON_KINESIS.deleteStream(request -> request.streamName(TEST_STREAM2).enforceConsumerDeletion(true))
-						.thenCompose(result -> AMAZON_KINESIS.waiter()
+				amazonKinesis.deleteStream(request -> request.streamName(TEST_STREAM2).enforceConsumerDeletion(true))
+						.thenCompose(result -> amazonKinesis.waiter()
 								.waitUntilStreamNotExists(request -> request.streamName(TEST_STREAM2)));
 
 		CompletableFuture.allOf(completableFuture1, completableFuture2).join();
@@ -106,13 +106,13 @@ public class KclMessageDrivenChannelAdapterMultiStreamTests implements Localstac
 	@Test
 	public void kclChannelAdapterMultiStream() {
 		String testData = "test data";
-		AMAZON_KINESIS.putRecord(request -> request
+		amazonKinesis.putRecord(request -> request
 				.streamName(TEST_STREAM1)
 				.data(SdkBytes.fromUtf8String(testData))
 				.partitionKey("test"));
 
 		String testData2 = "test data 2";
-		AMAZON_KINESIS.putRecord(request -> request
+		amazonKinesis.putRecord(request -> request
 				.streamName(TEST_STREAM2)
 				.data(SdkBytes.fromUtf8String(testData2))
 				.partitionKey("test"));
@@ -128,17 +128,17 @@ public class KclMessageDrivenChannelAdapterMultiStreamTests implements Localstac
 		assertThat(receive.getPayload()).isIn(testData, testData2);
 
 		List<Consumer> stream1Consumers =
-				AMAZON_KINESIS.describeStream(request -> request.streamName(TEST_STREAM1))
+				amazonKinesis.describeStream(request -> request.streamName(TEST_STREAM1))
 						.thenCompose(describeStreamResponse ->
-								AMAZON_KINESIS.listStreamConsumers(request ->
+								amazonKinesis.listStreamConsumers(request ->
 										request.streamARN(describeStreamResponse.streamDescription().streamARN())))
 						.join()
 						.consumers();
 
-		List<Consumer> stream2Consumers = AMAZON_KINESIS
+		List<Consumer> stream2Consumers = amazonKinesis
 				.describeStream(request -> request.streamName(TEST_STREAM2))
 				.thenCompose(describeStreamResponse ->
-						AMAZON_KINESIS.listStreamConsumers(request ->
+						amazonKinesis.listStreamConsumers(request ->
 								request.streamARN(describeStreamResponse.streamDescription().streamARN())))
 				.join()
 				.consumers();
@@ -154,7 +154,7 @@ public class KclMessageDrivenChannelAdapterMultiStreamTests implements Localstac
 		@Bean
 		public KclMessageDrivenChannelAdapter kclMessageDrivenChannelAdapter() {
 			KclMessageDrivenChannelAdapter adapter = new KclMessageDrivenChannelAdapter(
-					AMAZON_KINESIS, CLOUD_WATCH, DYNAMO_DB, TEST_STREAM1, TEST_STREAM2);
+					amazonKinesis, cloudWatch, dynamoDb, TEST_STREAM1, TEST_STREAM2);
 			adapter.setOutputChannel(kinesisReceiveChannel());
 			adapter.setStreamInitialSequence(
 					InitialPositionInStreamExtended.newInitialPosition(InitialPositionInStream.TRIM_HORIZON));

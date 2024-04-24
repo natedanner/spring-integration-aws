@@ -57,7 +57,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 @DirtiesContext
 public class DynamoDbLockRegistryTests implements LocalstackContainerTest {
 
-	private static DynamoDbAsyncClient DYNAMO_DB;
+	private static DynamoDbAsyncClient dynamoDb;
 
 	private final AsyncTaskExecutor taskExecutor = new SimpleAsyncTaskExecutor();
 
@@ -69,11 +69,11 @@ public class DynamoDbLockRegistryTests implements LocalstackContainerTest {
 
 	@BeforeAll
 	static void setup() {
-		DYNAMO_DB = LocalstackContainerTest.dynamoDbClient();
+		dynamoDb = LocalstackContainerTest.dynamoDbClient();
 		try {
-			DYNAMO_DB.deleteTable(request -> request.tableName(DynamoDbLockRepository.DEFAULT_TABLE_NAME))
+			dynamoDb.deleteTable(request -> request.tableName(DynamoDbLockRepository.DEFAULT_TABLE_NAME))
 					.thenCompose(result ->
-							DYNAMO_DB.waiter()
+							dynamoDb.waiter()
 									.waitUntilTableNotExists(request -> request
 													.tableName(DynamoDbLockRepository.DEFAULT_TABLE_NAME),
 											waiter -> waiter
@@ -184,7 +184,7 @@ public class DynamoDbLockRegistryTests implements LocalstackContainerTest {
 		final AtomicBoolean locked = new AtomicBoolean();
 		final CountDownLatch latch = new CountDownLatch(1);
 		Future<Object> result = this.taskExecutor.submit(() -> {
-			DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(DYNAMO_DB);
+			DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(dynamoDb);
 			dynamoDbLockRepository.setLeaseDuration(Duration.ofSeconds(10));
 			dynamoDbLockRepository.afterPropertiesSet();
 			DynamoDbLockRegistry registry2 = new DynamoDbLockRegistry(dynamoDbLockRepository);
@@ -220,7 +220,7 @@ public class DynamoDbLockRegistryTests implements LocalstackContainerTest {
 		final CountDownLatch latch3 = new CountDownLatch(1);
 		lock1.lockInterruptibly();
 		this.taskExecutor.submit(() -> {
-			DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(DYNAMO_DB);
+			DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(dynamoDb);
 			dynamoDbLockRepository.setLeaseDuration(Duration.ofSeconds(10));
 			dynamoDbLockRepository.afterPropertiesSet();
 			DynamoDbLockRegistry registry2 = new DynamoDbLockRegistry(dynamoDbLockRepository);
@@ -255,7 +255,7 @@ public class DynamoDbLockRegistryTests implements LocalstackContainerTest {
 
 	@Test
 	void testTwoThreadsDifferentRegistries() throws Exception {
-		DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(DYNAMO_DB);
+		DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(dynamoDb);
 		dynamoDbLockRepository.setLeaseDuration(Duration.ofSeconds(10));
 		dynamoDbLockRepository.afterPropertiesSet();
 		final DynamoDbLockRegistry registry1 = new DynamoDbLockRegistry(dynamoDbLockRepository);
@@ -326,7 +326,7 @@ public class DynamoDbLockRegistryTests implements LocalstackContainerTest {
 
 	@Test
 	void abandonedLock() throws Exception {
-		DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(DYNAMO_DB);
+		DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(dynamoDb);
 		dynamoDbLockRepository.setLeaseDuration(Duration.ofSeconds(10));
 		dynamoDbLockRepository.afterPropertiesSet();
 		this.dynamoDbLockRepository.acquire("foo");
@@ -351,7 +351,7 @@ public class DynamoDbLockRegistryTests implements LocalstackContainerTest {
 			this.dynamoDbLockRepository.setLeaseDuration(Duration.ofSeconds(60));
 			assertThatNoException().isThrownBy(() -> this.dynamoDbLockRegistry.renewLock("foo"));
 			String ttl =
-					DYNAMO_DB.getItem(request -> request
+					dynamoDb.getItem(request -> request
 									.tableName(DynamoDbLockRepository.DEFAULT_TABLE_NAME)
 									.key(Map.of(DynamoDbLockRepository.KEY_ATTR, AttributeValue.fromS("foo"))))
 							.join()
@@ -373,7 +373,7 @@ public class DynamoDbLockRegistryTests implements LocalstackContainerTest {
 
 		@Bean
 		public DynamoDbLockRepository dynamoDbLockRepository() {
-			DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(DYNAMO_DB);
+			DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(dynamoDb);
 			dynamoDbLockRepository.setLeaseDuration(Duration.ofSeconds(2));
 			return dynamoDbLockRepository;
 		}

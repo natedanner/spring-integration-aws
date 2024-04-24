@@ -47,15 +47,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class DynamoDbLockRegistryLeaderInitiatorTests implements LocalstackContainerTest {
 
-	private static DynamoDbAsyncClient DYNAMO_DB;
+	private static DynamoDbAsyncClient dynamoDb;
 
 	@BeforeAll
 	static void init() {
-		DYNAMO_DB = LocalstackContainerTest.dynamoDbClient();
+		dynamoDb = LocalstackContainerTest.dynamoDbClient();
 		try {
-			DYNAMO_DB.deleteTable(request -> request.tableName(DynamoDbLockRepository.DEFAULT_TABLE_NAME))
+			dynamoDb.deleteTable(request -> request.tableName(DynamoDbLockRepository.DEFAULT_TABLE_NAME))
 					.thenCompose(result ->
-							DYNAMO_DB.waiter()
+							dynamoDb.waiter()
 									.waitUntilTableNotExists(request -> request
 													.tableName(DynamoDbLockRepository.DEFAULT_TABLE_NAME),
 											waiter -> waiter
@@ -71,7 +71,7 @@ class DynamoDbLockRegistryLeaderInitiatorTests implements LocalstackContainerTes
 
 	@AfterAll
 	static void destroy() {
-		DYNAMO_DB.deleteTable(request -> request.tableName(DynamoDbLockRepository.DEFAULT_TABLE_NAME)).join();
+		dynamoDb.deleteTable(request -> request.tableName(DynamoDbLockRepository.DEFAULT_TABLE_NAME)).join();
 	}
 
 	@Test
@@ -81,7 +81,7 @@ class DynamoDbLockRegistryLeaderInitiatorTests implements LocalstackContainerTes
 		List<DynamoDbLockRepository> repositories = new ArrayList<>();
 		List<LockRegistryLeaderInitiator> initiators = new ArrayList<>();
 		for (int i = 0; i < 2; i++) {
-			DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(DYNAMO_DB);
+			DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(dynamoDb);
 			dynamoDbLockRepository.setLeaseDuration(Duration.ofSeconds(2));
 			dynamoDbLockRepository.afterPropertiesSet();
 			repositories.add(dynamoDbLockRepository);
@@ -180,7 +180,7 @@ class DynamoDbLockRegistryLeaderInitiatorTests implements LocalstackContainerTes
 		CountDownLatch granted = new CountDownLatch(1);
 		CountingPublisher countingPublisher = new CountingPublisher(granted);
 
-		DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(DYNAMO_DB);
+		DynamoDbLockRepository dynamoDbLockRepository = new DynamoDbLockRepository(dynamoDb);
 		dynamoDbLockRepository.afterPropertiesSet();
 		DynamoDbLockRegistry lockRepository = new DynamoDbLockRegistry(dynamoDbLockRepository);
 
